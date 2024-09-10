@@ -19,7 +19,7 @@ def get_file_columns() -> list:
     Returns:
         list: A list containing the column names.
     """
-    file_path = SOURCE / "SOURCECOLUMNS.txt"
+    file_path: str = SOURCE / "SOURCECOLUMNS.txt"
     # I am assuming a fixed number of columns for this challenge, 
     # like it comes from a static source system e.g. SAP
     columns = [None] * 11 
@@ -53,11 +53,11 @@ def write_out_file(output_name: str):
     """
     Processes the source data and writes it to a CSV file, then loads it to the destination using the storage library.
     """
-    source_path = SOURCE / "SOURCEDATA.txt"
+    source_path: str = SOURCE / "SOURCEDATA.txt"
     TEMP.mkdir(parents=True, exist_ok=True)
     temp_file_path = TEMP / f"{output_name}.csv"
 
-    columns = get_file_columns()
+    columns: list = get_file_columns()
     process_source_data(source_path, columns, temp_file_path)
 
     sl = SomeStorageLibrary()
