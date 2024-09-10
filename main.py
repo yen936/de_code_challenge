@@ -4,67 +4,67 @@ expected csv file should exist in ../data/destination/ after the execution is co
 """
 import os
 from pathlib import Path
+from csv import writer
 from src.some_storage_library import SomeStorageLibrary
 
-base_path = Path(__file__).parent
+BASE_PATH = Path(__file__).parent
+TEMP = BASE_PATH / "data" / "temp"
+SOURCE = BASE_PATH / "data" / "source"
 
-TEMP = "data/temp/"
-SOURCE = "data/source/"
 
-def get_columns() -> str:
+def get_file_columns() -> list:
     """
-    Reads the column names from a source file and returns them as a comma-separated string.
+    Reads the column names from a source file and returns them as a list.
 
     Returns:
-        str: A string containing the column names separated by commas.
+        list: A list containing the column names.
     """
-    
-    file_path = os.path.join(base_path, SOURCE, "SOURCECOLUMNS.txt")
+    file_path = SOURCE / "SOURCECOLUMNS.txt"
+    # I am assuming a fixed number of columns for this challenge, 
+    # like it comes from a static source system e.g. SAP
+    columns = [None] * 11 
 
-    # init array of fixed size
-    columns = [None] * 11
-
-    with open(file_path, "r+") as file:
+    with open(file_path, "r") as file:
         for line in file:
-            # data cleaning
-            line = line.replace("\n", "").split("|")
-            # sorting columns based on index
-            idx = int(line[0]) - 1
-            columns[idx] = line[1]
+            idx, column = line.strip().split("|")
+            columns[int(idx) - 1] = column
 
-    return ",".join(columns)
+    return columns
 
-def write_out_file():
+
+def process_source_data(source_path: Path, columns: list, output_path: Path):
     """
-    Reads the source data, replaces pipe characters with commas, adds a header, and writes the processed data to a temporary CSV file.
+    Reads the source data, processes it, and writes it to a CSV file.
 
-    Finally, loads the CSV file into a storage library.
+    Args:
+        source_path (Path): Path to the source data file.
+        columns (list): List of column names.
+        output_path (Path): Path to the output CSV file.
     """
+    with open(source_path, "r") as source, open(output_path, "w", newline="") as output:
+        csv_writer = writer(output)
+        csv_writer.writerow(columns)
 
-    cols = get_columns()
+        for line in source:
+            csv_writer.writerow(line.strip().split("|"))
 
-    source_path = os.path.join(base_path, SOURCE, "SOURCEDATA.txt")
 
-    with open(source_path, 'r') as f:
-        lines = f.readlines()
+def write_out_file(output_name: str):
+    """
+    Processes the source data and writes it to a CSV file, then loads it to the destination using the storage library.
+    """
+    source_path = SOURCE / "SOURCEDATA.txt"
+    TEMP.mkdir(parents=True, exist_ok=True)
+    temp_file_path = TEMP / f"{output_name}.csv"
 
-    lines = [line.replace("|", ",") for line in lines]
-    lines.insert(0, cols + "\n")
+    columns = get_file_columns()
+    process_source_data(source_path, columns, temp_file_path)
 
     sl = SomeStorageLibrary()
-
-    temp_directory = os.path.join(base_path, TEMP)
-    if not os.path.exists(temp_directory):
-        os.makedirs(temp_directory)
-
-    temp_file_path = temp_directory + "output.csv"
-    with open(temp_file_path, "w+") as f:
-        f.writelines(lines)
-
-    sl.load_csv(filename=temp_file_path)
+    sl.load_csv(filename=str(temp_file_path))
 
 
 if __name__ == '__main__':
     """Entrypoint"""
     print('Beginning the ETL process...')
-    write_out_file()
+    write_out_file(output_name='output')
